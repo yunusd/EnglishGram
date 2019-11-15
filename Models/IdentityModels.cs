@@ -1,4 +1,6 @@
-﻿using System.Data.Entity;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Data.Entity;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNet.Identity;
@@ -16,12 +18,18 @@ namespace EnglishGram.Models
             // Add custom user claims here
             return userIdentity;
         }
+
+        public string FirstName { get; set; }
+
+        public string LastName { get; set; }
+
+        public  ICollection<UserDetail> UserDetails { get; set; }
     }
 
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext()
-            : base("DefaultConnection", throwIfV1Schema: false)
+            : base("name=ApplicationDbContext", throwIfV1Schema: false)
         {
         }
 
@@ -29,5 +37,10 @@ namespace EnglishGram.Models
         {
             return new ApplicationDbContext();
         }
+
+        //todo: add application db context
+        public DbSet<UserDetail> UserDetails { get; set; }
+
+        public DbSet<Photo> Photos { get; set; }
     }
 }
