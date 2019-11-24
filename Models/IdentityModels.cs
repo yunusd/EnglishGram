@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -12,6 +13,11 @@ namespace EnglishGram.Models
     // You can add profile data for the user by adding more properties to your ApplicationUser class, please visit https://go.microsoft.com/fwlink/?LinkID=317594 to learn more.
     public class ApplicationUser : IdentityUser
     {
+        public ApplicationUser()
+        {
+            this.Photos = new HashSet<Photo>();
+        }
+
         public async Task<ClaimsIdentity> GenerateUserIdentityAsync(UserManager<ApplicationUser> manager)
         {
             // Note the authenticationType must match the one defined in CookieAuthenticationOptions.AuthenticationType
@@ -20,15 +26,13 @@ namespace EnglishGram.Models
             return userIdentity;
         }
 
-        [Required]
         [StringLength(25)]
         public string FirstName { get; set; }
 
-        [Required]
         [StringLength(25)]
         public string LastName { get; set; }
 
-        public  ICollection<UserDetail> UserDetails { get; set; }
+        public ICollection<Photo> Photos { get; set; }
     }
 
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
@@ -36,6 +40,7 @@ namespace EnglishGram.Models
         public ApplicationDbContext()
             : base("name=ApplicationDbContext", throwIfV1Schema: false)
         {
+            Database.Log = s => System.Diagnostics.Debug.WriteLine(s);
         }
 
         public static ApplicationDbContext Create()
@@ -43,11 +48,20 @@ namespace EnglishGram.Models
             return new ApplicationDbContext();
         }
 
-        //todo: add application db context
-        public DbSet<UserDetail> UserDetails { get; set; }
+        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<ApplicationUser>()
+            .HasMany<Photo>(s => s.Photos)
+            .WithMany(c => c.ApplicationUsers)
+            .Map(cs =>
+            {
+                cs.MapLeftKey("UserRefId");
+                cs.MapRightKey("PhotosRefId");
+                cs.ToTable("UserPhotos");
+            });
+        }
 
         public DbSet<Photo> Photos { get; set; }
-
-        public DbSet<UserLibrary> UserLibraries { get; set; }
     }
 }

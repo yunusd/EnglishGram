@@ -1,16 +1,117 @@
-﻿@{
-    ViewBag.Title = "Anasayfa";
+﻿@model Photo
+@{
+    ViewBag.Title = "Öğren";
+}
+<div class="container-fluid row h-100 justify-content-center align-items-center">
+    @if (Model != null)
+    {
+        <div id="content" class="row mb-4">
+            <div class="col-md-6 img-thumbnail p-1">
+                <img src="@Model.PhotoUrl" alt="" class="img-fluid" id="photo" />
+                <div>
+                    <span id="desc">@Model.Description</span>
+                    <span class="badge badge-primary" id="isLearned" data-photo-id="@Model.Id">
+                        kelimeyi öğrendin mi?
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-6 img-thumbnail p-1">
+
+                <img src="@Model.SubPhotoUrl" alt="" class="img-fluid" id="subPhoto" />
+                <div>
+                    <span id="subDesc">@Model.SubDescription</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="button btn btn-secondary text-center bg-warning" id="nextPhoto">
+            Sonraki
+        </button>
+    }
+    else
+    {
+        <div id="content" class="row">
+            <div class="text-center" style="font-size:3rem; font-weight:700;">
+                Tüm kelimeleri öğrendiniz!<br />
+                <button class="btn btn-secondary w-50" id="resetStatus">Öğrenmeye devam et</button>
+            </div>
+        </div>
+    }
+</div>
+
+@section scripts{
+    <script>
+        $(function () {
+            /**
+             * spinner html code
+             * */
+            let spinner = `<div class="spinner-border" role="status">
+                                <span class="sr-only">Loading...</span>
+                           </div>`
+             /*
+             * mark photo as learned
+             */
+            $('#isLearned').click((e) => {
+                e.preventDefault();
+                let photoId = $('#isLearned').attr('data-photo-id'); // we are getting data-photo-id with attr() method because data() method not running as excpected
+                $.ajax({
+                    method: 'post',
+                    data: { photoId },
+                    url: '@Url.Action("Learned", "Home")',
+                    success: (res) => {
+                        if (res.success) {
+                            $('#isLearned').text('öğrendim');
+                        } else {
+                            $('#isLearned').text('kelimeyi öğrendin mi?');
+                        }
+                    }
+                });
+            })
+
+            /*
+             * delete all photos which is learned and start over.
+             */
+            $('#resetStatus').click(() => {
+                $('#resetStatus').addClass('disabled').html(spinner);
+                $.ajax({
+                    method: 'post',
+                    url: '@Url.Action("ResetStatus", "Home")',
+                    success: (res) => {
+                        location.reload(); // whatever the response will be reload the page.
+                    }
+                });
+            });
+
+            $('#nextPhoto').click(() => {
+                $('#nextPhoto').addClass('disabled').html(spinner);
+                $.ajax({
+                    method: 'post',
+                    data: { isJson: true }, // sending isJson prop as true makes the response json.
+                    url: '@Url.Action("GetRandomPhoto", "Home")',
+                    success: (res) => {
+                        $('#isLearned').text('kelimeyi öğrendin mi?');
+                        if (!!res) {
+                            /*
+                             * fill related field
+                             */
+                            if (res.IsFinished) $('#nextPhoto').text('Bitti'); // if photo is the latest photo to show then print 'bitti'
+                            else $('#nextPhoto').removeClass('disabled').text('Sonraki');
+                            // Photo
+                            $('#isLearned').attr('data-photo-id', res.Id); // change data-photo-id attribute value with new one 
+                            $('#photo').attr('src', res.PhotoUrl);
+                            $('#desc').html(res.Description);
+
+                            // SubPhoto
+                            $('#subPhoto').attr('src', res.SubPhotoUrl);
+                            $('#subDesc').html(res.SubDescription);
+                        } else {
+                            location.reload();
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 }
 
-<div class="container-fluid row h-100 justify-content-center align-items-center">
-    <div class="mr-1 mb-4 img-thumbnail p-1">
-        <img src="https://placeimg.com/800/800/arch" alt="" class="img-fluid" />
-    </div>
-    <div class="mr-2 mb-4 img-thumbnail p-1">
-        <img src="https://placeimg.com/800/800/arch" alt="" class="img-fluid" />
-    </div>
 
-    <div class="mb-5 w-75">
-        <a href="#" class="btn btn-secondary w-100">Sonraki</a>
-    </div>
-</div>
