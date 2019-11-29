@@ -1,5 +1,8 @@
 ﻿using EnglishGram.Models;
+using EnglishGram.Utils;
 using Microsoft.AspNet.Identity;
+using Newtonsoft.Json;
+using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -22,9 +25,39 @@ namespace EnglishGram.Controllers
         {
             var photo = GetRandomPhoto() as Photo;
 
+            if (!ctx.Photos.Any())
+            {
+                var res = GetInstagramThings();
+                var shortcodes = JsonConvert.DeserializeObject<PhotoIns>(res.Content);
+                foreach (var shortcode in shortcodes.graphql.user.edge_owner_to_timeline_media.edges)
+                {
+                    var resPhoto = GetInstagramThings(shortcode.node.shortcode);
+                    var photos = JsonConvert.DeserializeObject<PhotoIns>(resPhoto.Content);
+                    var photoUrl = photos.graphql.shortcode_media.edge_sidecar_to_children.edges[0].node.display_url;
+                    var subPhotoUrl = photos.graphql.shortcode_media.edge_sidecar_to_children.edges[1].node.display_url;
+                    ctx.Photos.Add(new Photo
+                    {
+                        PhotoUrl = photoUrl,
+                        SubPhotoUrl = subPhotoUrl,
+                        CreatedAt = DateTime.Now
+                    });
+                }
+
+                ctx.SaveChanges();
+            }
+
             return View(photo);
         }
 
+
+        public IRestResponse GetInstagramThings(string shortcode = "")
+        {
+            var client = shortcode == "" ? new RestClient("https://www.instagram.com/ingilizcebilgibankasi/?__a=1") : new RestClient($"https://www.instagram.com/p/{shortcode}?__a=1");
+            var request = new RestRequest(Method.GET);
+            request.AddHeader("content-type", "application/json");
+            IRestResponse response = client.Execute(request);
+            return response;
+        }
 
         [AllowAnonymous]
         public dynamic GetRandomPhoto(bool isJson = false)

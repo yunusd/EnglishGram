@@ -17,7 +17,7 @@ namespace EnglishGram.Migrations
 
         protected override void Seed(EnglishGram.Models.ApplicationDbContext context)
         {
-            string email = "yunusdemirpolatt@gm.com";
+            string email = "example@example.com";
             string password = "123456";
 
             if (!context.Roles.Any(r => r.Name == "admin"))
