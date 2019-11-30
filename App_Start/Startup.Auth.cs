@@ -63,8 +63,8 @@ namespace EnglishGram
              */
             app.UseGoogleAuthentication(new GoogleOAuth2AuthenticationOptions()
             {
-                ClientId = "",
-                ClientSecret = ""
+                ClientId = "528170310705-7pvervuuhidq79ldvr9m9jr27pajms85.apps.googleusercontent.com",
+                ClientSecret = "jPwYjPccH8pF2Btl3qA0Ji64"
             });
         }
     }

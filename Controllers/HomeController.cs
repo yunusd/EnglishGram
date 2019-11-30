@@ -27,20 +27,32 @@ namespace EnglishGram.Controllers
 
             if (!ctx.Photos.Any())
             {
-                var res = GetInstagramThings();
-                var shortcodes = JsonConvert.DeserializeObject<PhotoIns>(res.Content);
-                foreach (var shortcode in shortcodes.graphql.user.edge_owner_to_timeline_media.edges)
+                var res = GetInstagramThings(); // first photos
+                var shortcodes = JsonConvert.DeserializeObject<PhotoIns>(res.Content); // get shortcodes to all photos for accessing sidecar of photo
+                while (true)
                 {
-                    var resPhoto = GetInstagramThings(shortcode.node.shortcode);
-                    var photos = JsonConvert.DeserializeObject<PhotoIns>(resPhoto.Content);
-                    var photoUrl = photos.graphql.shortcode_media.edge_sidecar_to_children.edges[0].node.display_url;
-                    var subPhotoUrl = photos.graphql.shortcode_media.edge_sidecar_to_children.edges[1].node.display_url;
-                    ctx.Photos.Add(new Photo
+                    // add photo and sidecar of photos
+                    foreach (var shortcode in shortcodes.data.user.edge_owner_to_timeline_media.edges)
                     {
-                        PhotoUrl = photoUrl,
-                        SubPhotoUrl = subPhotoUrl,
-                        CreatedAt = DateTime.Now
-                    });
+                        var resPhoto = GetInstagramThings(shortcode.node.shortcode);
+                        var photos = JsonConvert.DeserializeObject<PhotoIns>(resPhoto.Content);
+                        var photoUrl = photos.graphql.shortcode_media.edge_sidecar_to_children.edges[0].node.display_url;
+                        var subPhotoUrl = photos.graphql.shortcode_media.edge_sidecar_to_children.edges[1].node.display_url;
+                        ctx.Photos.Add(new Photo
+                        {
+                            PhotoUrl = photoUrl,
+                            SubPhotoUrl = subPhotoUrl,
+                            CreatedAt = DateTime.Now
+                        });
+                    }
+
+                    var hasNextPage = shortcodes.data.user.edge_owner_to_timeline_media.page_info.has_next_page;
+                    if (!hasNextPage) // if next page doesn't exist break the loop.
+                        break;
+                    
+                    // get next photos by sending end cursor
+                    res = GetInstagramThings("", 100, shortcodes.data.user.edge_owner_to_timeline_media.page_info.end_cursor);
+                    shortcodes = JsonConvert.DeserializeObject<PhotoIns>(res.Content);
                 }
 
                 ctx.SaveChanges();
@@ -50,9 +62,13 @@ namespace EnglishGram.Controllers
         }
 
 
-        public IRestResponse GetInstagramThings(string shortcode = "")
+        public IRestResponse GetInstagramThings(string shortcode = "", int postCount = 100, string endCursor = "")
         {
-            var client = shortcode == "" ? new RestClient("https://www.instagram.com/ingilizcebilgibankasi/?__a=1") : new RestClient($"https://www.instagram.com/p/{shortcode}?__a=1");
+            var staticQueryHash = "472f257a40c653c64c666ce877d59d2b"; // this static hash set by instagram for queries. It's always same and public.
+            var staticUserId = "10753987362"; // instagram.com/ingilizcedilbankasi
+            var url = $@"https://www.instagram.com/graphql/query/?query_hash={staticQueryHash}&variables={{""id"": ""{staticUserId}"", ""first"": ""{postCount}"", ""after"":""{endCursor}""}}";
+
+            var client = shortcode == "" ? new RestClient(url) : new RestClient($"https://www.instagram.com/p/{shortcode}?__a=1");
             var request = new RestRequest(Method.GET);
             request.AddHeader("content-type", "application/json");
             IRestResponse response = client.Execute(request);
