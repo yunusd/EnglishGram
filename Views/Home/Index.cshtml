@@ -10,9 +10,12 @@
                 <img src="@Model.PhotoUrl" alt="" class="img-fluid" id="photo" />
                 <div>
                     <span id="desc">@Model.Description</span>
-                    <span class="badge badge-primary" id="isLearned" data-photo-id="@Model.Id">
-                        kelimeyi öğrendin mi?
-                    </span>
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <span class="badge badge-primary" id="isLearned" data-photo-id="@Model.Id">
+                            kelimeyi öğrendin mi?
+                        </span>
+                    }
                 </div>
             </div>
             <div class="col-md-6 img-thumbnail p-1">
