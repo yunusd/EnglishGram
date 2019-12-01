@@ -123,7 +123,8 @@ namespace EnglishGram.Controllers
             /**
              * Unauthorized user processes
              */
-            var photo = ctx.Photos.Find(rnd.Next(ctx.Photos.Count()));
+            var photoCount = ctx.Photos.Count();
+            var photo = ctx.Photos.ToList()[rnd.Next(photoCount)];
             if (isJson)
             {
                 return Json(new
